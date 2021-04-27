@@ -11,6 +11,7 @@ from meta_model import MetaModel
 # n_pts_axis = 2
 # n_samples = 8
 n_var = 4
+# function = "single_pendulum"
 function = "double_pendulum"
 
 exp_grid = True
@@ -72,7 +73,7 @@ def main(n_pts_axis_, n_samples_, n_est_=100, model_num=1):
         elif function == "double_pendulum":
             init_file = './/data//double_init_27.csv'
             test_file = './/data/double_pendulum_test.csv'
-        # train.to_csv(test_file, index=False, header=True)
+        # train.to_csv(test_file, index=False, header=True)  # Test file 만들 떄 사용하는 코드
 
     elif exp_smart:
         ss = SmartSampling(
@@ -88,7 +89,7 @@ def main(n_pts_axis_, n_samples_, n_est_=100, model_num=1):
         ss.read_init_sample_file()
         # print(ss.train)
 
-    # 테스트 데이터 일기
+    # 테스트 데이터 읽기
     test = ss.read_test_file()
     # print(ss.test)
 
