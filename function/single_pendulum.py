@@ -5,7 +5,7 @@ from scipy.integrate import odeint
 def full_model(x, g, L, c, m):
     return [x[1], -g/L * np.sin(x[0]) - c/m/L*x[1]]
 
-def single_pendulum(L, init_velocity, c, tf=2., dt=0.02, m=0.3, g=9.81):
+def single_pendulum(L, init_velocity, c, tf=2., dt=0.01, m=0.3, g=9.81):
     ## Set constants
     init_angle = np.pi / 2.  # initial angle
     t0 = 0.  # initial time
