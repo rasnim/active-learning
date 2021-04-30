@@ -18,7 +18,8 @@ from tensorflow.keras.layers import Dense, LeakyReLU
 
 class MetaModel():
     init_file = './/data//single_init_27.csv'
-    test_file = './/data//single_pendulum_test.csv'
+    # test_file = './/data//single_pendulum_test.csv'
+    test_file = './/data//single_test1331.csv'
 
     def __init__(self, train, test, n_est = 100, function="single_pendulum"):
         self.n_est = n_est
@@ -46,7 +47,7 @@ class MetaModel():
         self.y_pred = model.predict(self.test_x)
 
     def model_extra_tree(self):
-        model = ExtraTreesRegressor(n_estimators=self.n_est) #, random_state=42)
+        model = ExtraTreesRegressor(n_estimators=self.n_est, max_depth=16, random_state=42)
         model.fit(self.train_x, self.train_y)
 
         self.y_pred = model.predict(self.test_x)
