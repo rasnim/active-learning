@@ -14,16 +14,17 @@ class GridSampling(Sampling):
         self.recursive_bubbling(self.n_var-1)
 
     def recursive_bubbling(self, var_idx):
-        vals = []
+        # vals = []
         min = self.var_ranges[self.n_var - 1 - var_idx][0]
         max = self.var_ranges[self.n_var - 1 - var_idx][1]
 
         # if n_pts_axis = 2, only use the min and max values
         gap = (max - min) / (self.n_pts_axis - 1)
 
-        for i in range(self.n_pts_axis):
-            # if n_divide=0, add only the max. Otherwise, add each in-between values
-            vals.append(min + gap * i)
+        # for i in range(self.n_pts_axis):
+        #     # if n_divide=0, add only the max. Otherwise, add each in-between values
+        #     vals.append(min + gap * i)
+        vals = [min + gap * i for i in range(self.n_pts_axis)]
 
         if var_idx == 0:
             self.samples = [[x] for x in vals]
@@ -39,6 +40,8 @@ class GridSampling(Sampling):
                 test = [[val]+x for x in pre_samples]
                 new_samples = new_samples + test
             self.samples = new_samples
+            # self.samples = [[[[val] + x] for val in vals] for x in self.samples]
+            # self.samples = [[[[val] + x] for x in self.samples] for val in vals]
 
     def show_samples(self):
         super().show_samples()

@@ -22,8 +22,11 @@ def full_model(x, g, L, m):
 
 	return [xprime0, xprime1, xprime2, xprime3]
 
+# 시간 간격
+# dt_=5e-2
+dt_=1e-2
 
-def double_pendulum(L, init_vel, tf=5., dt=5e-2, m=[2., 1.], g=9.8):
+def double_pendulum(L, init_vel, tf=5., dt=dt_, m=[2., 1.], g=9.8):
 	## Set constants
 	init_angle = [1.6, 2.2] #initial angle 
 	t0 = 0.  #initial time

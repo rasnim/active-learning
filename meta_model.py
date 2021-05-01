@@ -1,14 +1,8 @@
-import numpy as np
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.metrics import mean_absolute_percentage_error
 from sklearn.ensemble import RandomForestRegressor,ExtraTreesRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from sklearn.datasets import make_friedman2
 from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
-from pykrige.rk import RegressionKriging
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from matplotlib import pyplot
@@ -17,10 +11,6 @@ from tensorflow.keras.layers import Dense, LeakyReLU
 
 
 class MetaModel():
-    init_file = './/data//single_init_27.csv'
-    # test_file = './/data//single_pendulum_test.csv'
-    test_file = './/data//single_test1331.csv'
-
     def __init__(self, train, test, n_est = 100, function="single_pendulum"):
         self.n_est = n_est
         if function == "single_pendulum":
@@ -29,38 +19,34 @@ class MetaModel():
             self.train_y = train['angle']
             self.test_x = test[['L', 'v0', 'C', 't']]
             self.test_y = test['angle']
-            self.init_file = './/data//single_init_27.csv'
-            self.test_file = './/data//single_pendulum_test.csv'
+            # self.init_file = './/data//single_init_27.csv'
+            # self.test_file = './/data//single_pendulum_test.csv'
         elif function == "double_pendulum":
             self.n_var = 5
             self.train_x = train[['L1', 'L2', 'v1', 'v2', 't']]
             self.train_y = train['angle1']
             self.test_x = test[['L1', 'L2', 'v1', 'v2', 't']]
             self.test_y = test['angle1']
-            self.init_file = './/data//double_init_27.csv'
-            self.test_file = './/data/double_pendulum_test.csv'
+            # self.init_file = './/data//double_init_27.csv'
+            # self.test_file = './/data/double_pendulum_test.csv'
 
     def model_random_forest(self):
         model = RandomForestRegressor(n_estimators=self.n_est) #, random_state=42)
         model.fit(self.train_x, self.train_y)
-
         self.y_pred = model.predict(self.test_x)
 
     def model_extra_tree(self):
-        model = ExtraTreesRegressor(n_estimators=self.n_est, max_depth=16, random_state=42)
+        model = ExtraTreesRegressor(n_estimators=self.n_est) #, max_depth=16, random_state=42)
         model.fit(self.train_x, self.train_y)
-
         self.y_pred = model.predict(self.test_x)
 
     def model_xgboost(self):
         model = XGBRegressor(
-            n_estimators=self.n_est, random_state=4,
+            n_estimators=self.n_est, # random_state=4,
             # max_depth=8, learning_rate=0.01,
             # eta=0.1, subsample=0.7, colsample_bytree=0.8
         )
-
         model.fit(self.train_x, self.train_y)
-        model.score(self.train_x, self.train_y)
         self.y_pred = model.predict(self.test_x)
 
     def model_lightgbm(self):
@@ -81,9 +67,8 @@ class MetaModel():
             "n_estimators": self.n_est
         }
         model = LGBMRegressor(**hyper_params)
-
         model.fit(self.train_x, self.train_y)
-        model.score(self.train_x, self.train_y)
+        # model.score(self.train_x, self.train_y)
         self.y_pred = model.predict(self.test_x)
 
     def model_gaussian_process(self):
@@ -91,7 +76,6 @@ class MetaModel():
         kernel = DotProduct() + WhiteKernel()
         # gpr = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=9)
         model = GaussianProcessRegressor(kernel=kernel) #, random_state=0)
-
         model.fit(self.train_x, self.train_y)
         model.score(self.train_x, self.train_y)
         self.y_pred, sigma = model.predict(self.test_x, return_std=True)
@@ -109,20 +93,29 @@ class MetaModel():
         # plt.ylim(-10, 20)
         # plt.legend(loc='upper left')
 
-    def model_dnn(self):
+    def model_dnn(self, dnn_param=['64-2', 'relu', 2000]):
         # define the layers
         x_in = Input(shape=(self.n_var,))
 
-        epochs = 2000
-        # act_ftn = 'relu'
-        act_ftn = LeakyReLU(alpha=0.1)
-        x = Dense(128, activation=act_ftn)(x_in)
-        x = Dense(128, activation=act_ftn)(x)
-        x = Dense(64, activation=act_ftn)(x)
-        x = Dense(64, activation=act_ftn)(x)
+        self.param = dnn_param
+        epochs = self.param[2]
 
-        # x = Dense(64, activation=act_ftn)(x_in)
-        # x = Dense(64, activation=act_ftn)(x)
+        if self.param[1]=='relu':
+            act_ftn = 'relu'
+        elif self.param[1]=='leaky':
+            act_ftn = LeakyReLU(alpha=0.1)
+
+        if self.param[0]=='128-4':
+            x = Dense(128, activation=act_ftn)(x_in)
+            x = Dense(128, activation=act_ftn)(x)
+            x = Dense(64, activation=act_ftn)(x)
+            x = Dense(64, activation=act_ftn)(x)
+        elif self.param[0] == '128-2':
+            x = Dense(128, activation=act_ftn)(x_in)
+            x = Dense(128, activation=act_ftn)(x)
+        elif self.param[0] == '64-2':
+            x = Dense(64, activation=act_ftn)(x_in)
+            x = Dense(64, activation=act_ftn)(x)
 
         x_out = Dense(1)(x)
 
@@ -142,10 +135,9 @@ class MetaModel():
         self.y_pred = model.predict(self.test_x)
 
     def evaluate(self):
-        mse = mean_squared_error(self.test_y, self.y_pred, squared=True)
-        rmse = mse**0.5
+        r2 = r2_score(self.test_y, self.y_pred)
+        rmse = mean_squared_error(self.test_y, self.y_pred, squared=False)
         mae = mean_absolute_error(self.test_y, self.y_pred)
         mape = mean_absolute_percentage_error(self.test_y, self.y_pred)
-        r2 = r2_score(self.test_y, self.y_pred)
 
         return r2, rmse, mae, mape

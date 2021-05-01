@@ -3,7 +3,7 @@ import random
 from sampling.sampling import Sampling
 
 class RandomSampling(Sampling):
-    # random.seed(10)
+    random.seed(42)
 
     def sampling(self):
         for i in range(self.n_samples):
