@@ -13,6 +13,7 @@ from tensorflow.keras.layers import Dense, LeakyReLU
 class MetaModel():
     def __init__(self, train, test, n_est = 100, function="single_pendulum"):
         self.n_est = n_est
+        self.function = function
         if function == "single_pendulum":
             self.n_var = 4
             self.train_x = train[['L', 'v0', 'C', 't']]
@@ -130,6 +131,7 @@ class MetaModel():
         pyplot.plot(history.history['mse'])
         pyplot.plot(history.history['mae'])
         # pyplot.plot(history.history['mape'])
+        pyplot.title(self.function + "-" + str(len(self.train_x)) + str(dnn_param))
         pyplot.show()
 
         self.y_pred = model.predict(self.test_x)

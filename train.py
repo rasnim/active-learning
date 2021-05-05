@@ -66,7 +66,7 @@ def main(n_pts_axis_, n_samples_, n_est_=100, model_num=1, dnn_param=['64-2', 'r
             function=function
         )
         ss.sampling()
-        # rd_s.show_samples()
+        # ss.show_samples()
         train = ss.generate_train_data()
         n_samples = len(train)
 
@@ -77,22 +77,19 @@ def main(n_pts_axis_, n_samples_, n_est_=100, model_num=1, dnn_param=['64-2', 'r
         # train.to_csv(file_name, index=False, header=True)
 
     elif exp_smart:
-        exp = 'smart'
+        exp = 'rand_box'
         ss = SmartSampling(
             n_var, var_ranges, n_samples,
             n_pts_axis=n_pts_axis_,
             function=function
         )
-        # 초기 샘플 생성
-        # ss.init_sampling()
-        # ss.get_y()
-
-        # 초기 샘플 생성 대신에 읽기
-        train = ss.read_init_sample_file()
+        ss.sampling()
+        # ss.show_samples()
+        train = ss.generate_train_data()
         n_samples = len(train)
 
     # 테스트 데이터 읽기
-    test = ss.read_test_file(test_file)
+    test = pd.read_csv(test_file)
     # print(ss.test)
 
     # 학습 및 평가
@@ -127,6 +124,7 @@ def switch_model(model_num):
 
 if __name__ == "__main__":
     start_time0 = datetime.now()
+    print(start_time0)
 
     header = "exp, model, n_samples, n_pts_axis, n_exps, r2, rmse, mae, mape, exe_time, param"
     if os.path.exists(result_file):
@@ -136,24 +134,46 @@ if __name__ == "__main__":
         f.write(header + "\n")
 
     print(function)
-    for model_num in [0,1,2,3]:#,5]:
+
+    # for random or grid sampling
+    model_nums = [3] # [0,1,2,3]
+    n_ests = [200]
+    n_pts_axis_set = [7]
+
+    # # for random or grid sampling (only for deep learning)
+    # model_nums = [5]
+    # n_ests = [0]
+    # n_pts_axis_set = [2] #, 3, 4, 5, 6, 7]
+    #
+    # act_fnts = ['relu']  # 'leaky',
+    # net_strs = ['128-2'] #, '128-4']
+    # epochs = [2000] #, 2000]
+
+    # for smart sampling
+    # model_nums = [1]    # for QBC model
+    # n_ests = [100]      # for QBC model
+    # n_pts_axis_set = [4] # num of sequential samples
+
+    # Smart Sampling으로 Single Pendulum에서 4^3 및 5^3개 n_exps를 수행하여,
+    # ExtraTree의 정확도를 98%까지 향상시키는 것을 목표로 함!
+    for model_num in model_nums: # [0,1,2,3,5]:
         cnt = 0
         model = switch_model(model_num)
-        for n_est in [500, 200, 100]:
+        for n_est in n_ests:
             # header = "exp, model, n_samples, n_pts_axis, n_exps, r2, rmse, mae, mape, exe_time, param"
             # print("\nmodel=", model, ", n_est=", n_est, "\n", header)
-            for n_pts_axis in [2,3,4,5,6,7]:
+            for n_pts_axis in n_pts_axis_set: #[2,3,4,5,6,7]:
                 # if os.path.exists(result_file):
                 #     f = open(result_file, "a+")
                 # else:
                 #     f = open(result_file, "a+")
                 #     f.write(header + "\n")
 
-                start_time = datetime.now()
                 # print(start_time)
                 n_exps = n_pts_axis ** n_var
                 if model_num != 5:
-                    main(n_pts_axis, n_exps, n_est, model_num)
+                    start_time = datetime.now()
+                    main(n_pts_axis, n_exps, n_est, model_num)  # 핵심 구문
 
                     end_time = datetime.now()
                     exe_time = end_time - start_time
@@ -164,16 +184,18 @@ if __name__ == "__main__":
                     f.flush()
 
                 else:  # dnn의 경우
-                    for structure in ['128-2']: #, '128-4']:   # network structure
-                        for activate in ['relu', 'leaky']: # activation function
-                            for epoch in [2000]: #, 5000]:     # num of epoches
+                    for activate in act_fnts:  # activation function
+                        for structure in net_strs:   # network structure
+                            for epoch in epochs:     # num of epoches
+                                start_time = datetime.now()
+
                                 dnn_param = [structure, activate, epoch]
                                 main(n_pts_axis, n_exps, n_est, model_num, dnn_param=dnn_param)
 
                                 end_time = datetime.now()
                                 exe_time = end_time - start_time
                                 res = [exp, model, n_pts_axis, n_exps, n_samples, r2, rmse, mae, mape, exe_time,
-                                       "dnn_param="+str(dnn_param).replace(',','|')]
+                                       "dnn_param="+str(dnn_param).replace(',','|').replace(' ','')]
                                 print(','.join(map(str, res)))
                                 f.write(','.join(map(str, res)) + "\n")
                                 f.flush()
